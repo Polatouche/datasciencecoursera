@@ -44,49 +44,41 @@ The temporay data.frames are removed to free the memory as the become unneeded.
 ### STEP 2
 ####  Extracts only the measurements on the mean and standard deviation for each measurement
 
-# Searching for '-mean(' or '-std(' in the features names
+The variable names are stored in the features.txt file. Examinig this file shows that the mesurements on the mean are labelled with a "-mean()" part in the variable name (and with a "-std()" part for standard deviation).
+The indices of the varaibles we want to extract are found using a grep of these strings in the variable names list : the second column of the "features" data.frame.
 
-features = read.table("features.txt",colClasses=c("numeric","character"))
-# get the indices
-indices = grep("/*-std\\(|-mean\\(",features[,'V2'],perl=TRUE) 
+Once the indices found, we have just to extract this subset of the main data.frame:
 
+```
 extracted = X[,indices]
-rm(X);
-
+```
 
 ### STEP 3
 ####  Uses descriptive activity names to name the activities in the data set
-activities = read.table("activity_labels.txt",colClasses=c("numeric","character"))
-activityNames = factor(activities[,'V2'],levels=activities[,'V2'])
-namedY = factor(y$V1)
-levels(namedY)=levels(activityNames)
 
-# adding activities and subjects to the main data set
+The activities names are loaded from the "activity_labels.txt" file, as a character factor.
+The activity variable was previously loaded from the y_*.txt and merged in a y data.frame.
+We extract a factor from this data.frame (the second column), and set the levels of this factor to that of the activities factor.
+So we got a characters factor instead of the factor numbers.
 
-X = cbind(S,namedY,extracted)
+Now we can bind the "subject" and "activity" data to the main data.frame using cbind.
 
-rm(S,namedY,extracted)
 
 ### STEP 4
-####  Appropriately labels the data set with descriptive variable names. 
-labels = grep("/*-std\\(|-mean\\(",features[,'V2'],perl=TRUE,value=TRUE)
-names(X)<-c('Subject','Activity',labels)
+####  Appropriately labels the data set with descriptive variable names.
+
+As we got the indicises of the mean and std variables, we got the corresponding labels, using the 'value=TRUE' parameter in the call to the grep function.
+We combine theses labels with the "Subject" and "Activity" strings to match the positions of the variables, and assign this list to the names of the main data.frame.
 
 
 ### STEP 5
 ####  From the data set in step 4, creates a second, independent tidy data set with the average of each variable for each activity and each subject.
 
-# with the help from the site at:
-# https://github.com/dgrapov/TeachingDemos/blob/master/Demos/dplyr/hands_on_with_dplyr.md
-library(dplyr)
+To do this, we use the dplyr package, to group the data by subject and activity to compute the average of the grouped values, as explained at
+<https://github.com/dgrapov/TeachingDemos/blob/master/Demos/dplyr/hands_on_with_dplyr.md>
 
-XAvrg <- group_by(X,Subject,Activity) %>%
-    select(one_of(labels)) %>%
-    summarise_each(funs(mean(.,na.rm=TRUE)))
-
-# writing the text file to upload in the current working dir
-write.table(XAvrg,"XAvrg.txt",row.names=FALSE)
-
+Using the dplyr %>% operator allow to do all the work in one chained command.
+We don't continue the chaining to the write.table() function, just to have the opportunity to check the result before writing it.
 
 
 The script file is heavily commented and hopefully understandable.
